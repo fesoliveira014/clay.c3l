@@ -1,0 +1,9 @@
+{
+  "provides": "clay",
+  "sources": [ "src/**" ],
+  "c-sources": [ "csrc/clay.c" ],
+  "targets": {
+    "linux-x64": { "dependencies": [], "linked-libraries": [] },
+    "windows-x64": { "wincrt": "static", "dependencies": [], "linked-libraries": [] }
+  }
+}

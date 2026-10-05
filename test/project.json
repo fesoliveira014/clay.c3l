@@ -1,0 +1,9 @@
+{
+  "langrev": "1",
+  "dependency-search-paths": [ "libs" ],
+  "dependencies": [ "clay" ],
+  "output": "build",
+  "targets": {
+    "smoke": { "type": "test", "sources": [ "src/**" ] }
+  }
+}

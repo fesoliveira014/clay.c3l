@@ -1,0 +1,5 @@
+This package compiles Clay, by Nic Barker, from the git submodule under vendor/clay
+(commit e6cc36941ab2af5d81107617039d6f527a1c660b). Clay is licensed under the zlib/libpng
+license; its full text is vendor/clay/LICENSE.md.
+
+The C3 binding itself (src/, csrc/, scripts/, test/) is MIT-licensed; see LICENSE.

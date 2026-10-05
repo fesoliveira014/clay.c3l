@@ -1,0 +1,479 @@
+module clay;
+
+typedef Context = void;
+
+// MSVC compiles Clay's packed enums at int size; gcc and clang pack them to a byte.
+alias PackedEnum @feat(WIN32) = int;
+alias PackedEnum @feat(!WIN32) = char;
+
+alias MeasureTextFn = fn Dimensions (CharsSlice text, TextElementConfig* config, void* user);
+alias ErrorHandlerFn = fn void (ErrorData error);
+alias TransitionHandlerFn = fn bool (TransitionCallbackArguments arguments);
+alias TransitionInitialFn = fn TransitionData (TransitionData target, TransitionProperty properties);
+alias TransitionFinalFn = fn TransitionData (TransitionData initial, TransitionProperty properties);
+
+typedef TransitionProperty = uint;
+
+enum LayoutDirection : PackedEnum {
+    LEFT_TO_RIGHT,
+    TOP_TO_BOTTOM,
+}
+
+enum AlignX : PackedEnum {
+    LEFT,
+    RIGHT,
+    CENTER,
+}
+
+enum AlignY : PackedEnum {
+    TOP,
+    BOTTOM,
+    CENTER,
+}
+
+enum SizingType : PackedEnum {
+    FIT,
+    GROW,
+    PERCENT,
+    FIXED,
+}
+
+enum TextWrap : PackedEnum {
+    WORDS,
+    NEWLINES,
+    NONE,
+}
+
+enum TextAlign : PackedEnum {
+    LEFT,
+    CENTER,
+    RIGHT,
+}
+
+enum AttachPoint : PackedEnum {
+    LEFT_TOP,
+    LEFT_CENTER,
+    LEFT_BOTTOM,
+    CENTER_TOP,
+    CENTER_CENTER,
+    CENTER_BOTTOM,
+    RIGHT_TOP,
+    RIGHT_CENTER,
+    RIGHT_BOTTOM,
+}
+
+enum PointerCapture : PackedEnum {
+    CAPTURE,
+    PASSTHROUGH,
+}
+
+enum AttachTo : PackedEnum {
+    NONE,
+    PARENT,
+    ELEMENT_WITH_ID,
+    ROOT,
+}
+
+enum ClipTo : PackedEnum {
+    NONE,
+    ATTACHED_PARENT,
+}
+
+enum TransitionState : int {
+    IDLE,
+    ENTERING,
+    TRANSITIONING,
+    EXITING,
+}
+
+enum TransitionEnterTrigger : PackedEnum {
+    SKIP_ON_FIRST_PARENT_FRAME,
+    TRIGGER_ON_FIRST_PARENT_FRAME,
+}
+
+enum TransitionExitTrigger : PackedEnum {
+    SKIP_WHEN_PARENT_EXITS,
+    TRIGGER_WHEN_PARENT_EXITS,
+}
+
+enum TransitionInteraction : PackedEnum {
+    DISABLE_WHILE_TRANSITIONING_POSITION,
+    ALLOW_WHILE_TRANSITIONING_POSITION,
+}
+
+enum ExitSiblingOrdering : PackedEnum {
+    UNDERNEATH_SIBLINGS,
+    NATURAL_ORDER,
+    ABOVE_SIBLINGS,
+}
+
+enum RenderCommandType : PackedEnum {
+    NONE,
+    RECTANGLE,
+    BORDER,
+    TEXT,
+    IMAGE,
+    SCISSOR_START,
+    SCISSOR_END,
+    OVERLAY_COLOR_START,
+    OVERLAY_COLOR_END,
+    CUSTOM,
+}
+
+enum PointerState : PackedEnum {
+    PRESSED_THIS_FRAME,
+    PRESSED,
+    RELEASED_THIS_FRAME,
+    RELEASED,
+}
+
+enum ErrorType : PackedEnum {
+    TEXT_MEASUREMENT_FUNCTION_NOT_PROVIDED,
+    ARENA_CAPACITY_EXCEEDED,
+    ELEMENTS_CAPACITY_EXCEEDED,
+    TEXT_MEASUREMENT_CAPACITY_EXCEEDED,
+    DUPLICATE_ID,
+    FLOATING_CONTAINER_PARENT_NOT_FOUND,
+    PERCENTAGE_OVER_1,
+    INTERNAL_ERROR,
+    UNBALANCED_OPEN_CLOSE,
+    HASH_MAP_CAPACITY_EXCEEDED,
+}
+
+struct Chars {
+    bool  is_statically_allocated;
+    int   length;
+    char* chars;
+}
+
+struct CharsSlice {
+    int   length;
+    char* chars;
+    char* base_chars;
+}
+
+struct Arena {
+    uptr  next_allocation;
+    usz   capacity;
+    char* memory;
+}
+
+struct Dimensions {
+    float width;
+    float height;
+}
+
+struct Vector2 {
+    float x;
+    float y;
+}
+
+struct Color {
+    float r;
+    float g;
+    float b;
+    float a;
+}
+
+struct BoundingBox {
+    float x;
+    float y;
+    float width;
+    float height;
+}
+
+struct ElementId {
+    uint  id;
+    uint  offset;
+    uint  base_id;
+    Chars string_id;
+}
+
+struct ElementIdArray {
+    int        capacity;
+    int        length;
+    ElementId* internal_array;
+}
+
+struct CornerRadius {
+    float top_left;
+    float top_right;
+    float bottom_left;
+    float bottom_right;
+}
+
+struct ChildAlignment {
+    AlignX x;
+    AlignY y;
+}
+
+struct SizingMinMax {
+    float min;
+    float max;
+}
+
+struct SizingAxis {
+    union {
+        SizingMinMax min_max;
+        float        percent;
+    }
+    SizingType type;
+}
+
+struct Sizing {
+    SizingAxis width;
+    SizingAxis height;
+}
+
+struct Padding {
+    ushort left;
+    ushort right;
+    ushort top;
+    ushort bottom;
+}
+
+struct LayoutConfig {
+    Sizing          sizing;
+    Padding         padding;
+    ushort          child_gap;
+    ChildAlignment  child_alignment;
+    LayoutDirection layout_direction;
+}
+
+struct TextElementConfig {
+    void*     user_data;
+    Color     text_color;
+    ushort    font_id;
+    ushort    font_size;
+    ushort    letter_spacing;
+    ushort    line_height;
+    TextWrap  wrap_mode;
+    TextAlign text_alignment;
+}
+
+struct AspectRatioElementConfig {
+    float aspect_ratio;
+}
+
+struct ImageElementConfig {
+    void* image_data;
+}
+
+struct FloatingAttachPoints {
+    AttachPoint element;
+    AttachPoint parent;
+}
+
+struct FloatingElementConfig {
+    Vector2              offset;
+    Dimensions           expand;
+    uint                 parent_id;
+    short                z_index;
+    FloatingAttachPoints attach_points;
+    PointerCapture       pointer_capture_mode;
+    AttachTo             attach_to;
+    ClipTo               clip_to;
+}
+
+struct CustomElementConfig {
+    void* custom_data;
+}
+
+struct ClipElementConfig {
+    bool    horizontal;
+    bool    vertical;
+    Vector2 child_offset;
+}
+
+struct BorderWidth {
+    ushort left;
+    ushort right;
+    ushort top;
+    ushort bottom;
+    ushort between_children;
+}
+
+struct BorderElementConfig {
+    Color       color;
+    BorderWidth width;
+}
+
+struct TransitionData {
+    BoundingBox bounding_box;
+    Color       background_color;
+    Color       overlay_color;
+    Color       border_color;
+    BorderWidth border_width;
+}
+
+struct TransitionCallbackArguments {
+    TransitionState    transition_state;
+    TransitionData     initial;
+    TransitionData*    current;
+    TransitionData     target;
+    float              elapsed_time;
+    float              duration;
+    TransitionProperty properties;
+}
+
+struct TransitionEnterConfig {
+    TransitionInitialFn    set_initial_state;
+    TransitionEnterTrigger trigger;
+}
+
+struct TransitionExitConfig {
+    TransitionFinalFn     set_final_state;
+    TransitionExitTrigger trigger;
+    ExitSiblingOrdering   sibling_ordering;
+}
+
+struct TransitionElementConfig {
+    TransitionHandlerFn   handler;
+    float                 duration;
+    TransitionProperty    properties;
+    TransitionInteraction interaction_handling;
+    TransitionEnterConfig enter;
+    TransitionExitConfig  exit;
+}
+
+struct TextRenderData {
+    CharsSlice string_contents;
+    Color      text_color;
+    ushort     font_id;
+    ushort     font_size;
+    ushort     letter_spacing;
+    ushort     line_height;
+}
+
+struct RectangleRenderData {
+    Color        background_color;
+    CornerRadius corner_radius;
+}
+
+struct ImageRenderData {
+    Color        background_color;
+    CornerRadius corner_radius;
+    void*        image_data;
+}
+
+struct CustomRenderData {
+    Color        background_color;
+    CornerRadius corner_radius;
+    void*        custom_data;
+}
+
+struct ClipRenderData {
+    bool horizontal;
+    bool vertical;
+}
+
+struct OverlayColorRenderData {
+    Color color;
+}
+
+struct BorderRenderData {
+    Color        color;
+    CornerRadius corner_radius;
+    BorderWidth  width;
+}
+
+union RenderData {
+    RectangleRenderData    rectangle;
+    TextRenderData         text;
+    ImageRenderData        image;
+    CustomRenderData       custom;
+    BorderRenderData       border;
+    ClipRenderData         clip;
+    OverlayColorRenderData overlay_color;
+}
+
+struct ScrollContainerData {
+    Vector2*          scroll_position;
+    Dimensions        scroll_container_dimensions;
+    Dimensions        content_dimensions;
+    ClipElementConfig config;
+    bool              found;
+}
+
+struct ElementData {
+    BoundingBox bounding_box;
+    bool        found;
+}
+
+struct RenderCommand {
+    BoundingBox       bounding_box;
+    RenderData        render_data;
+    void*             user_data;
+    uint              id;
+    short             z_index;
+    RenderCommandType command_type;
+}
+
+struct RenderCommandArray {
+    int            capacity;
+    int            length;
+    RenderCommand* internal_array;
+}
+
+struct PointerData {
+    Vector2      position;
+    PointerState state;
+}
+
+struct ElementDeclaration {
+    LayoutConfig             layout;
+    Color                    background_color;
+    Color                    overlay_color;
+    CornerRadius             corner_radius;
+    AspectRatioElementConfig aspect_ratio;
+    ImageElementConfig       image;
+    FloatingElementConfig    floating;
+    CustomElementConfig      custom;
+    ClipElementConfig        clip;
+    BorderElementConfig      border;
+    TransitionElementConfig  transition;
+    void*                    user_data;
+}
+
+struct ErrorData {
+    ErrorType error_type;
+    Chars     error_text;
+    void*     user_data;
+}
+
+struct ErrorHandler {
+    ErrorHandlerFn error_handler_function;
+    void*          user_data;
+}
+
+extern fn uint min_memory_size() @cname("Clay_MinMemorySize");
+extern fn Arena create_arena(usz capacity, void* memory) @cname("Clay_CreateArenaWithCapacityAndMemory");
+extern fn void set_pointer_state(Vector2 position, bool pointer_down) @cname("Clay_SetPointerState");
+extern fn Context* initialize(
+    Arena arena,
+    Dimensions layout_dimensions,
+    ErrorHandler error_handler,
+) @cname("Clay_Initialize");
+extern fn Context* get_current_context() @cname("Clay_GetCurrentContext");
+extern fn void set_current_context(Context* context) @cname("Clay_SetCurrentContext");
+extern fn void update_scroll_containers(
+    bool enable_drag_scrolling,
+    Vector2 scroll_delta,
+    float delta_time,
+) @cname("Clay_UpdateScrollContainers");
+extern fn Vector2 get_scroll_offset() @cname("Clay_GetScrollOffset");
+extern fn void set_layout_dimensions(Dimensions dimensions) @cname("Clay_SetLayoutDimensions");
+extern fn void begin_layout() @cname("Clay_BeginLayout");
+extern fn RenderCommandArray end_layout(float delta_time) @cname("Clay_EndLayout");
+extern fn ElementData get_element_data(ElementId id) @cname("Clay_GetElementData");
+extern fn ElementIdArray get_pointer_over_ids() @cname("Clay_GetPointerOverIds");
+extern fn void set_measure_text_function(MeasureTextFn measure, void* user) @cname("Clay_SetMeasureTextFunction");
+extern fn void set_max_element_count(int count) @cname("Clay_SetMaxElementCount");
+extern fn void set_max_measure_text_cache_word_count(int count) @cname("Clay_SetMaxMeasureTextCacheWordCount");
+extern fn void reset_measure_text_cache() @cname("Clay_ResetMeasureTextCache");
+extern fn void set_culling_enabled(bool enabled) @cname("Clay_SetCullingEnabled");
+extern fn void __open_element_with_id(ElementId id) @cname("Clay__OpenElementWithId") @private;
+extern fn void __configure_open_element(ElementDeclaration* declaration)
+  @cname("Clay__ConfigureOpenElementPtr") @private;
+extern fn void __close_element() @cname("Clay__CloseElement") @private;
+extern fn void __open_text_element(Chars text, TextElementConfig config) @cname("Clay__OpenTextElement") @private;

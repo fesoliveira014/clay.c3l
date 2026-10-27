@@ -1,7 +1,7 @@
 # clay.c3l
 
 C3 bindings for [Clay](https://github.com/nicbarker/clay), a single-header C UI layout library by
-Nic Barker. Module `clay`, package `clay`, C3 0.8.3, Clay `main` at
+Nic Barker. Module `clay`, package `clay`, C3 0.8.5_1, Clay `main` at
 `e6cc36941ab2af5d81107617039d6f527a1c660b`.
 
 The binding is thin. `src/clay.c3i` declares Clay's types layout-exact and the bound functions

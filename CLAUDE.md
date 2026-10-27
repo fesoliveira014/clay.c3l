@@ -26,7 +26,7 @@ packaged as a C3 library (`.c3l`), not a standalone program.
 ## Authoring rules
 
 - Invoke the `c3-expert`, `c3-style` and `c3-bindings` skills before writing, editing or
-  reviewing any C3 or diagnosing a c3c error. C3 is 0.8.3 here and pre-1.0.
+  reviewing any C3 or diagnosing a c3c error. C3 is 0.8.5_1 here and pre-1.0.
 - Do not run `c3fmt`. Hand-format: K&R braces, four spaces.
 - Docstrings on every public type, constant and wrapper in `src/clay.c3` (raw externs and layout
   types carry none): one summary line, `@param` for pointers and any parameter its name does not
